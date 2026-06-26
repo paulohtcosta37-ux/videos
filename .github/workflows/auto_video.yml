@@ -1,0 +1,65 @@
+name: Auto Video Creator & WhatsApp Sender
+
+on:
+  schedule:
+    - cron: '0 10,14,18,22 * * *' # Roda a cada 4 horas das 7:00 às 21:00 (07:00, 11:00, 15:00, 19:00 no Horário de Brasília)
+  workflow_dispatch: # Permite que você clique em um botão no GitHub para rodar manualmente
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install System Dependencies (FFmpeg & Chrome Headless)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg libasound2 libgbm-dev libnss3 libxss1 libasound2t64
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-genai twilio yt-dlp edge-tts pillow
+
+    - name: Install Node Dependencies
+      run: |
+        npm install
+
+    - name: Run Pipeline (Monitor -> Download -> Analyze -> Generate assets)
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        python run_pipeline.py
+
+    - name: Compile Video with Remotion
+      run: |
+        npx remotion render ViralVideo output/final_video.mp4 --gl=angle
+
+    - name: Upload Video and Send to WhatsApp
+      env:
+        TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+        TWILIO_TO_NUMBER: ${{ secrets.TWILIO_TO_NUMBER }}
+        TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+      run: |
+        python send_whatsapp.py
+
+    - name: Commit and Push state changes (history.json)
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add history.json
+        git commit -m "Update monitor history [skip ci]" || echo "No changes to commit"
+        git push

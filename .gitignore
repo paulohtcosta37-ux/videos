@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.DS_Store
+.env
+
+# Rendered outputs
+out/
+output/
+*.mp4
+
+# Temporary test files
+*.mp3
+*.wav
+*.srt
+test_*.py
+test_tts.py
+
+# Generated pipeline assets
+public/audio_*
+public/image_*
+public/avatar.jpg
+public/background_music.mp3
+public/scenes_data.json
+scenes.json
+post_caption.txt
