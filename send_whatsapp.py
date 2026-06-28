@@ -4,25 +4,84 @@ import json
 from twilio.rest import Client
 import requests
 
+def upload_to_catbox(filepath):
+    print("Tentando upload para o Catbox.moe (limite 200MB)...")
+    try:
+        url = "https://catbox.moe/user/api.php"
+        data = {"reqtype": "fileupload"}
+        with open(filepath, 'rb') as f:
+            files = {"fileToUpload": f}
+            response = requests.post(url, data=data, files=files, timeout=90)
+        if response.status_code == 200:
+            link = response.text.strip()
+            if link.startswith("https://"):
+                print(f"Upload Catbox concluído com sucesso! Link: {link}")
+                return link
+        print(f"Aviso: Catbox retornou HTTP {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Erro no upload Catbox: {e}")
+    return None
+
+def upload_to_gofile(filepath):
+    print("Tentando upload para o Gofile.io (sem limite de tamanho)...")
+    try:
+        server_res = requests.get("https://api.gofile.io/servers", timeout=15)
+        if server_res.status_code == 200:
+            server_data = server_res.json()
+            if server_data.get("status") == "ok":
+                server = server_data["data"]["servers"][0]["name"]
+                upload_url = f"https://{server}.gofile.io/contents/uploadfile"
+                with open(filepath, 'rb') as f:
+                    files = {"file": f}
+                    response = requests.post(upload_url, files=files, timeout=180)
+                if response.status_code == 200:
+                    res_data = response.json()
+                    if res_data.get("status") == "ok":
+                        data = res_data["data"]
+                        link = data.get("directLink") or data.get("downloadPage")
+                        print(f"Upload Gofile concluído com sucesso! Link: {link}")
+                        return link
+        print(f"Aviso: Falha ao obter servidor ou fazer upload no Gofile")
+    except Exception as e:
+        print(f"Erro no upload Gofile: {e}")
+    return None
+
 def upload_video_to_tmpfiles(filepath):
-    print("Fazendo upload temporário do vídeo para o tmpfiles.org...")
+    print("Tentando upload para o tmpfiles.org (limite 100MB)...")
     try:
         url = "https://tmpfiles.org/api/v1/upload"
         with open(filepath, 'rb') as f:
             files = {'file': f}
-            response = requests.post(url, files=files)
-            
+            response = requests.post(url, files=files, timeout=120)
         if response.status_code == 200:
             res_data = response.json()
             if res_data.get("status") == "success":
                 upload_url = res_data["data"]["url"]
-                # Converte para link de download direto
                 direct_url = upload_url.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/")
-                print(f"Upload concluído! Link público de download direto: {direct_url}")
+                print(f"Upload tmpfiles concluído com sucesso! Link: {direct_url}")
                 return direct_url
+        print(f"Aviso: Tmpfiles retornou HTTP {response.status_code}")
     except Exception as e:
-        print(f"Erro ao subir arquivo no tmpfiles.org: {e}")
+        print(f"Erro no upload tmpfiles: {e}")
     return None
+
+def upload_video_failsafe(filepath):
+    # Tenta Catbox primeiro (ideal para arquivos grandes e link direto permanente)
+    link = upload_to_catbox(filepath)
+    if link:
+        return link
+        
+    # Tenta Gofile em seguida (ideal para arquivos gigantes)
+    link = upload_to_gofile(filepath)
+    if link:
+        return link
+        
+    # Tenta Tmpfiles como último recurso
+    link = upload_video_to_tmpfiles(filepath)
+    if link:
+        return link
+        
+    raise Exception("Falha crítica: Não foi possível fazer o upload do vídeo em nenhum dos provedores temporários.")
 
 def send_to_whatsapp(video_url, caption):
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
@@ -128,10 +187,9 @@ def main():
         with open(caption_path, 'r', encoding='utf-8') as f:
             caption = f.read().strip()
             
-    video_url = upload_video_to_tmpfiles(video_path)
-    if video_url:
-        send_to_whatsapp(video_url, caption)
-        send_to_email(video_url, caption)
+    video_url = upload_video_failsafe(video_path)
+    send_to_whatsapp(video_url, caption)
+    send_to_email(video_url, caption)
 
 if __name__ == "__main__":
     main()
