@@ -53,6 +53,9 @@ def main():
         print("Erro na análise do vídeo pela IA.")
         if os.path.exists("scenes.json"):
             print("Aviso: Utilizando o roteiro do arquivo 'scenes.json' existente como fallback!")
+            if not os.path.exists("post_caption.txt"):
+                with open("post_caption.txt", 'w', encoding='utf-8') as f:
+                    f.write("Confira esta história fantástica! #curiosidades #historia")
         else:
             print("Abortando pipeline.")
             return
