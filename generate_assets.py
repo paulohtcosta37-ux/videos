@@ -295,21 +295,32 @@ def main():
             
         subtitles = generate_subtitles_proportional(narration, duration)
         
-        # Baixa imagem fotorrealista via FLUX
-        image_file = download_scene_image(visual_prompt, i)
-        if not image_file:
-            image_file = "avatar.jpg"
-            
+        # Verifica se existe um vídeo real do caso fornecido pelo usuário no diretório public/
+        video_file = None
+        for ext in [".mp4", ".webm", ".mov"]:
+            user_video = os.path.join(PUBLIC_DIR, f"scene_{i}{ext}")
+            if os.path.exists(user_video):
+                video_file = f"scene_{i}{ext}"
+                print(f"Trecho de vídeo real do caso encontrado em {user_video}! Usando para a cena {i}.")
+                break
+                
         scene_entry = {
             "scene_number": i,
             "type": scene_type,
             "audio_src": audio_file,
             "duration_in_seconds": duration,
             "duration_in_frames": int(duration * 30), # 30 fps
-            "subtitles": subtitles,
-            "image_src": image_file
+            "subtitles": subtitles
         }
         
+        if video_file:
+            scene_entry["video_src"] = video_file
+        else:
+            image_file = download_scene_image(visual_prompt, i)
+            if not image_file:
+                image_file = "avatar.jpg"
+            scene_entry["image_src"] = image_file
+            
         scenes_data.append(scene_entry)
 
     # Escreve o arquivo final de dados do vídeo

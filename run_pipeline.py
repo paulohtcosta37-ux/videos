@@ -11,29 +11,16 @@ def main():
     new_video_url = None
     target_channel = None
     
-    # 2. Varre os perfis (começando pelo canal do edu para este teste)
-    # Colocamos o canal do edu no topo para priorizar
-    channels = ["canaldoedu_"] + [c for c in monitor.TIKTOK_CHANNELS if c != "canaldoedu_"]
+    # 2. Força a verificação e o processamento do canal da Mariah (@mariahheeusi)
+    print("Processando canal target da Mariah (@mariahheeusi) conforme solicitado pelo usuário...")
+    new_video_url, video_id, title = monitor.check_tiktok_channel("mariahheeusi")
+    target_channel = "mariahheeusi"
     
-    for channel in channels:
-        video_url, video_id, title = monitor.check_tiktok_channel(channel)
-        if video_url and video_id:
-            last_processed = history.get(channel)
-            if last_processed != video_id:
-                print(f"NOVO VÍDEO DETECTADO no canal @{channel}: '{title}' ({video_id})")
-                new_video_url = video_url
-                target_channel = channel
-                # Atualiza o ID do vídeo no histórico
-                history[channel] = video_id
-                break
-                
     if not new_video_url:
-        print("Nenhum vídeo novo detectado nos perfis monitorados.")
-        # Como é o primeiro teste, se não detectar diferença, força o download do último vídeo do canal do Edu de qualquer forma
-        print("Forçando download do vídeo do Canal do Edu para teste de inicialização...")
-        new_video_url, video_id, title = monitor.check_tiktok_channel("canaldoedu_")
-        target_channel = "canaldoedu_"
-        history["canaldoedu_"] = video_id
+        print("Erro: Não foi possível obter o último vídeo da Mariah. Abortando pipeline.")
+        return
+        
+    history["mariahheeusi"] = video_id
         
     # 3. Baixa o vídeo do TikTok
     temp_video_path = "temp_video.mp4"
