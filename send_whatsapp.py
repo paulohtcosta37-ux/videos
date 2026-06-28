@@ -58,6 +58,63 @@ def send_to_whatsapp(video_url, caption):
         print(f"Erro ao enviar pelo Twilio: {e}")
         return False
 
+def send_to_email(video_url, caption):
+    api_key = os.environ.get("RESEND_API_KEY")
+    to_email = os.environ.get("EMAIL_TO_ADDRESS")
+    
+    if not api_key or not to_email:
+        print("Aviso: RESEND_API_KEY ou EMAIL_TO_ADDRESS não configuradas. Envio de e-mail pulado.")
+        return False
+        
+    print(f"Enviando e-mail com o vídeo e legenda para {to_email}...")
+    
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    html_caption = caption.replace("\n", "<br>")
+    
+    body = {
+        "from": "Videos IA <onboarding@resend.dev>",
+        "to": to_email,
+        "subject": "🎬 Novo Vídeo Automatizado Pronto para Postar!",
+        "html": f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h2 style="color: #4F46E5; text-align: center;">Seu vídeo está pronto! 🚀</h2>
+            <p>Olá Paulo,</p>
+            <p>O pipeline automático concluiu a geração de um novo vídeo vertical (9:16) na nuvem.</p>
+            
+            <div style="background-color: #F3F4F6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <h4 style="margin-top: 0; color: #1F2937;">📋 Legenda Sugerida para Postagem:</h4>
+                <p style="font-style: italic; color: #4B5563;">{html_caption}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{video_url}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                    📥 Baixar Vídeo MP4
+                </a>
+                <p style="font-size: 11px; color: #9CA3AF; margin-top: 8px;">(O link expira temporariamente)</p>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+            <p style="font-size: 12px; color: #6B7280; text-align: center;">Enviado automaticamente pelo GitHub Actions.</p>
+        </div>
+        """
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=body)
+        if response.status_code in [200, 201]:
+            print("E-mail enviado com sucesso via Resend!")
+            return True
+        else:
+            print(f"Erro ao enviar e-mail: HTTP {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+    return False
+
 def main():
     video_path = "output/final_video.mp4"
     caption_path = "post_caption.txt"
@@ -74,6 +131,7 @@ def main():
     video_url = upload_video_to_tmpfiles(video_path)
     if video_url:
         send_to_whatsapp(video_url, caption)
+        send_to_email(video_url, caption)
 
 if __name__ == "__main__":
     main()

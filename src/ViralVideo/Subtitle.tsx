@@ -46,7 +46,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ words }) => {
     <div
       style={{
         position: "absolute",
-        bottom: 240, // Centralizado na parte inferior de forma visível
+        bottom: 380, // Centralizado um pouco mais acima para limpar a interface do TikTok/Reels
         width: "100%",
         display: "flex",
         flexWrap: "wrap",
