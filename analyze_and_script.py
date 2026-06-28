@@ -48,13 +48,29 @@ def analyze_video_with_gemini(video_path):
         "}"
     )
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[uploaded_file, prompt],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json"
-        )
-    )
+    max_retries = 5
+    response = None
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[uploaded_file, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+            break
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"Erro definitivo na chamada da API do Gemini após {max_retries} tentativas: {e}")
+                try:
+                    client.files.delete(name=uploaded_file.name)
+                except:
+                    pass
+                return False
+            sleep_time = (2 ** attempt) * 5 + 3
+            print(f"Aviso: Falha na API do Gemini (tentativa {attempt + 1}/{max_retries}): {e}. Tentando novamente em {sleep_time}s...")
+            time.sleep(sleep_time)
     
     # Limpa o arquivo da nuvem após a análise
     try:
