@@ -11,16 +11,16 @@ def main():
     new_video_url = None
     target_channel = None
     
-    # 2. Força a verificação e o processamento do canal da Mariah (@mariahheeusi)
-    print("Processando canal target da Mariah (@mariahheeusi) conforme solicitado pelo usuário...")
-    new_video_url, video_id, title = monitor.check_tiktok_channel("mariahheeusi")
-    target_channel = "mariahheeusi"
+    # 2. Força a verificação e o processamento do canal do Jeffin (@jeffin.reddit)
+    print("Processando canal target do Jeffin (@jeffin.reddit) conforme solicitado pelo usuário...")
+    new_video_url, video_id, title = monitor.check_tiktok_channel("jeffin.reddit")
+    target_channel = "jeffin.reddit"
     
     if not new_video_url:
-        print("Erro: Não foi possível obter o último vídeo da Mariah. Abortando pipeline.")
+        print("Erro: Não foi possível obter o último vídeo do Jeffin. Abortando pipeline.")
         return
         
-    history["mariahheeusi"] = video_id
+    history["jeffin.reddit"] = video_id
         
     # 3. Baixa o vídeo do TikTok
     temp_video_path = "temp_video.mp4"
