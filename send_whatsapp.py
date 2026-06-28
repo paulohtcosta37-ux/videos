@@ -2,38 +2,26 @@ import os
 import urllib.request
 import json
 from twilio.rest import Client
+import requests
 
-def upload_video_to_file_io(filepath):
-    print("Fazendo upload temporário do vídeo para o file.io...")
+def upload_video_to_tmpfiles(filepath):
+    print("Fazendo upload temporário do vídeo para o tmpfiles.org...")
     try:
-        url = "https://file.io"
-        # Prepara a requisição multipart para upload
+        url = "https://tmpfiles.org/api/v1/upload"
         with open(filepath, 'rb') as f:
-            file_data = f.read()
+            files = {'file': f}
+            response = requests.post(url, files=files)
             
-        boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
-        data = []
-        data.append(f"--{boundary}".encode('utf-8'))
-        data.append(b'\r\nContent-Disposition: form-data; name="file"; filename="final_video.mp4"')
-        data.append(b'\r\nContent-Type: video/mp4\r\n\r\n')
-        data.append(file_data)
-        data.append(f"\r\n--{boundary}--".encode('utf-8'))
-        
-        body = b''.join(data)
-        headers = {
-            'Content-Type': f'multipart/form-data; boundary={boundary}',
-            'Content-Length': str(len(body))
-        }
-        
-        req = urllib.request.Request(url, data=body, headers=headers, method='POST')
-        with urllib.request.urlopen(req) as response:
-            res_data = json.loads(response.read().decode('utf-8'))
-            if res_data.get("success"):
-                video_url = res_data.get("link")
-                print(f"Upload concluído! Link público temporário: {video_url}")
-                return video_url
+        if response.status_code == 200:
+            res_data = response.json()
+            if res_data.get("status") == "success":
+                upload_url = res_data["data"]["url"]
+                # Converte para link de download direto
+                direct_url = upload_url.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/")
+                print(f"Upload concluído! Link público de download direto: {direct_url}")
+                return direct_url
     except Exception as e:
-        print(f"Erro ao subir arquivo no file.io: {e}")
+        print(f"Erro ao subir arquivo no tmpfiles.org: {e}")
     return None
 
 def send_to_whatsapp(video_url, caption):
@@ -83,7 +71,7 @@ def main():
         with open(caption_path, 'r', encoding='utf-8') as f:
             caption = f.read().strip()
             
-    video_url = upload_video_to_file_io(video_path)
+    video_url = upload_video_to_tmpfiles(video_path)
     if video_url:
         send_to_whatsapp(video_url, caption)
 
