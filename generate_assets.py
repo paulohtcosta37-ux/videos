@@ -86,6 +86,20 @@ def generate_default_bg_music():
 def download_scene_image(prompt, index):
     filename = f"image_{index}.jpg"
     filepath = os.path.join(PUBLIC_DIR, filename)
+    
+    # Verifica se já existe uma imagem real providenciada pelo usuário no diretório public/
+    # (ex: scene_1.jpg, scene_1.png, scene_1.jpeg)
+    for ext in [".jpg", ".jpeg", ".png"]:
+        user_file = os.path.join(PUBLIC_DIR, f"scene_{index}{ext}")
+        if os.path.exists(user_file):
+            print(f"Imagem real do caso encontrada em {user_file}! Copiando e convertendo...")
+            try:
+                img = Image.open(user_file)
+                img.convert("RGB").save(filepath, "JPEG", quality=95)
+                return filename
+            except Exception as e:
+                print(f"Erro ao processar imagem real {user_file}: {e}. Continuando com FLUX...")
+                
     print(f"Gerando imagem fotorrealista para a Cena {index} via FLUX.1-schnell no Hugging Face...")
     
     # Prompt aprimorado para realismo extremo cinematográfico

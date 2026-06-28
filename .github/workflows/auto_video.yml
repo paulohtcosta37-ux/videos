@@ -61,10 +61,10 @@ jobs:
       run: |
         python send_whatsapp.py
 
-    - name: Commit and Push state changes (history.json)
+    - name: Commit and Push state changes (history.json & scripts)
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
-        git add history.json
-        git commit -m "Update monitor history [skip ci]" || echo "No changes to commit"
+        git add history.json scenes.json post_caption.txt
+        git commit -m "Update monitor history and scripts [skip ci]" || echo "No changes to commit"
         git push
