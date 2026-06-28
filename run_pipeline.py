@@ -50,8 +50,12 @@ def main():
         os.remove(temp_video_path)
         
     if not analyze_success:
-        print("Erro na análise do vídeo pela IA. Abortando pipeline.")
-        return
+        print("Erro na análise do vídeo pela IA.")
+        if os.path.exists("scenes.json"):
+            print("Aviso: Utilizando o roteiro do arquivo 'scenes.json' existente como fallback!")
+        else:
+            print("Abortando pipeline.")
+            return
         
     # 5. Roda o script de geração de ativos (FLUX + Gemini TTS)
     print("Iniciando geração dos ativos de voz e imagem do novo vídeo...")
