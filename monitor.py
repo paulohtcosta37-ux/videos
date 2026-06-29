@@ -63,3 +63,67 @@ def download_video(video_url, output_path):
     except Exception as e:
         print(f"Erro ao baixar vídeo: {e}")
         return False
+
+def get_video_id(url):
+    import re
+    # Procura por um padrão de dígitos após '/video/' na URL
+    match = re.search(r'/video/(\d+)', url)
+    if match:
+        return match.group(1)
+    # Suporte para URLs do formato alternativo do yt-dlp ou curtas, se aplicável
+    return None
+
+def is_link_processed(url):
+    db_file = "processed_links.json"
+    if not os.path.exists(db_file):
+        return False
+        
+    video_id = get_video_id(url)
+    if not video_id:
+        return False
+        
+    try:
+        with open(db_file, 'r', encoding='utf-8') as f:
+            db = json.load(f)
+            processed_list = db.get("processed", [])
+            for item in processed_list:
+                if item.get("video_id") == video_id or item.get("url") == url:
+                    return True
+    except Exception as e:
+        print(f"Erro ao ler banco de dados de links: {e}")
+    return False
+
+def add_processed_link(url):
+    db_file = "processed_links.json"
+    video_id = get_video_id(url)
+    if not video_id:
+        return
+        
+    import datetime
+    new_entry = {
+        "url": url,
+        "video_id": video_id,
+        "processed_at": datetime.datetime.utcnow().isoformat() + "Z"
+    }
+    
+    db = {"processed": []}
+    if os.path.exists(db_file):
+        try:
+            with open(db_file, 'r', encoding='utf-8') as f:
+                db = json.load(f)
+        except Exception:
+            pass
+            
+    if "processed" not in db:
+        db["processed"] = []
+        
+    # Evita duplicar no próprio arquivo
+    if not any(item.get("video_id") == video_id for item in db["processed"]):
+        db["processed"].append(new_entry)
+        try:
+            with open(db_file, 'w', encoding='utf-8') as f:
+                json.dump(db, f, indent=2, ensure_ascii=False)
+            print(f"URL de vídeo registrada no banco de dados: {url}")
+        except Exception as e:
+            print(f"Erro ao salvar banco de dados de links: {e}")
+

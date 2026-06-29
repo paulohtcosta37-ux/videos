@@ -102,9 +102,9 @@ def download_scene_image(prompt, index):
                 
     print(f"Gerando imagem fotorrealista para a Cena {index} via FLUX.1-schnell no Hugging Face...")
     
-    # Prompt aprimorado para realismo extremo cinematográfico
+    # Prompt aprimorado para realismo extremo cinematográfico de suspense
     styled_prompt = (
-        f"{prompt}, raw photo, 8k resolution, photorealistic, cinematic lighting, dramatic mood, highly detailed, vertical 9:16"
+        f"{prompt}, raw photo, cinematic lighting, dark moody style, dramatic shadows, highly detailed textures, shot on 35mm lens, depth of field, photorealistic, 8k resolution, vertical 9:16"
     )
     
     max_retries = 3
@@ -269,9 +269,18 @@ def generate_subtitles_proportional(text, duration):
     return words_data
 
 def main():
+    import sys
     if not os.path.exists(SCENES_CONFIG):
         print(f"Erro: Arquivo '{SCENES_CONFIG}' não encontrado. Por favor, forneça o roteiro primeiro.")
         return
+
+    # Executa a busca automática de vídeos do Pexels
+    if os.path.exists("fetch_stock_videos.py"):
+        try:
+            print("Executando busca e download de vídeos do Pexels...")
+            subprocess.run([sys.executable, "fetch_stock_videos.py"], check=True)
+        except Exception as e:
+            print(f"Aviso: Falha ao rodar busca de vídeos do Pexels: {e}")
 
     generate_default_avatar()
     generate_default_bg_music()
@@ -322,6 +331,25 @@ def main():
             scene_entry["image_src"] = image_file
             
         scenes_data.append(scene_entry)
+
+    # 5. Garante duração mínima de 1 minuto (60 segundos)
+    total_duration = sum(s["duration_in_seconds"] for s in scenes_data)
+    print(f"\nDuração total original estimada: {round(total_duration, 2)} segundos.")
+    
+    if total_duration < 60.0:
+        deficit = 60.0 - total_duration
+        if deficit > 0 and len(scenes_data) > 0:
+            extra_per_scene = deficit / len(scenes_data)
+            print(f"Aviso: O vídeo está com {round(total_duration, 2)}s (menos do que o mínimo de 60s).")
+            print(f"Estendendo proporcionalmente as cenas em +{round(extra_per_scene, 2)}s cada para atingir 60s...")
+            for s in scenes_data:
+                s["duration_in_seconds"] += extra_per_scene
+                s["duration_in_frames"] = int(s["duration_in_seconds"] * 30)
+                # Estende a exibição da última palavra da legenda para cobrir o fim da cena
+                if s.get("subtitles") and len(s["subtitles"]) > 0:
+                    s["subtitles"][-1]["end"] = round(s["duration_in_seconds"], 3)
+            total_duration = sum(s["duration_in_seconds"] for s in scenes_data)
+            print(f"Nova duração total ajustada: {round(total_duration, 2)}s")
 
     # Escreve o arquivo final de dados do vídeo
     final_data = {"scenes": scenes_data}
