@@ -189,7 +189,7 @@ def main():
             
     video_url = upload_video_failsafe(video_path)
     send_to_whatsapp(video_url, caption)
-    send_to_email(video_url, caption)
+    # send_to_email(video_url, caption) # Desativado a pedido do usuário
 
 if __name__ == "__main__":
     main()
